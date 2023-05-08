@@ -8,6 +8,7 @@ import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverage
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
 import Tooltip from '@material-ui/core/Tooltip';
+import SqlModel from './SqlModel';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const metadata = props.hit.metadata;
@@ -142,8 +143,20 @@ class IdCopyButton extends React.PureComponent<
     return (
       <Tooltip title="Copy dataset ID to clipboard" placement="top" arrow>
         <button className="btn btn-sm btn-outline-primary" {...handlers}>
-          <Icon.Copy className="feather" /> {text}
+          <div className="icon-holder">
+            <Icon.Copy className="feather" /> {text}
+          </div>
         </button>
+      </Tooltip>
+    );
+  }
+}
+
+class SqlParaquet extends React.PureComponent<{id: string}> {
+  render() {
+    return (
+      <Tooltip title="Run SQL Queries on Dataset" placement="top" arrow>
+        <SqlModel id={this.props.id} />
       </Tooltip>
     );
   }
@@ -160,6 +173,7 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   }
   return (
     <ButtonGroup>
+      <SqlParaquet id={hit.id} />
       <IdCopyButton id={hit.id} />
       <LinkButton
         href={`${API_URL}/download/${hit.id}`}
