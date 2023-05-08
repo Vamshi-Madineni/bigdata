@@ -144,7 +144,7 @@ class BaseHandler(RequestHandler):
 
 
 class Application(GracefulApplication):
-    def __init__(self, *args, es, redis_client, lazo, **kwargs):
+    def __init__(self, *args, es, redis_client, lazo, duckdb, minio, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
@@ -154,6 +154,9 @@ class Application(GracefulApplication):
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
+        self.duckdb = duckdb
+        self.minio = minio
+
         if os.environ.get('NOMINATIM_URL'):
             self.nominatim = os.environ['NOMINATIM_URL']
         else:
