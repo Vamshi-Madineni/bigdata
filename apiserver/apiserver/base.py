@@ -32,6 +32,11 @@ class BaseHandler(RequestHandler):
 
     def set_default_headers(self):
         self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.set_header('Access-Control-Allow-Credentials', 'true')
+        # self.set_header()
 
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
@@ -53,6 +58,10 @@ class BaseHandler(RequestHandler):
         elif not isinstance(obj, dict):
             raise ValueError("Can't encode %r to JSON" % type(obj))
         self.set_header('Content-Type', 'application/json; charset=utf-8')
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:8001")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type")
+        self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.set_header('Access-Control-Allow-Credentials', 'true')
         return self.finish(json.dumps(obj))
 
     def send_error_json(self, status, message):

@@ -12,7 +12,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import {ButtonGroup, Tooltip} from '@material-ui/core';
-const baseurl = 'http://127.0.0.1:8000';
+const baseurl = 'http://localhost:8002';
 
 interface QueryStructure {
   data: Array<string>;
@@ -33,17 +33,43 @@ const SqlModel: React.FC<{id: string}> = ({id}) => {
 
   const fetchData = (query: string) => {
     setloading(true);
-    axios
-      .get(baseurl + '/query?id=' + id + '&query=' + query)
+    // Create an axios instance with the required headers
+    const instance = axios.create({
+      headers: {
+        'Access-Control-Allow-Origin': 'http://localhost:8001',
+        'Access-Control-Allow-Headers': 'x-requested-with',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Credentials': 'true',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': 'macOS',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'cross-site',
+      },
+    });
+    const data = {
+      datasetId: id,
+      query: query,
+    };
+    const hardcode =
+      '{"results": {"schema": {"fields": [{"name": "index", "type": "integer"}, {"name": "County", "type": "string"}, {"name": "Year", "type": "integer"}, {"name": "Data_Type", "type": "string"}, {"name": "Mode", "type": "string"}, {"name": "Share", "type": "number"}, {"name": "Source", "type": "string"}], "primaryKey": ["index"], "pandas_version": "0.20.0"}, "data": [{"index": 0, "County": "Alameda County", "Year": 1960, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.749, "Source": "BayAreaCensus"}, {"index": 1, "County": "Alameda County", "Year": 1970, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.783, "Source": "BayAreaCensus"}, {"index": 2, "County": "Alameda County", "Year": 1980, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.776, "Source": "NHGIS_Census"}, {"index": 3, "County": "Alameda County", "Year": 1990, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.795, "Source": "NHGIS_Census"}, {"index": 4, "County": "Alameda County", "Year": 2000, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.802, "Source": "NHGIS_Census"}, {"index": 5, "County": "Alameda County", "Year": 2006, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.768, "Source": "B08301_ACS06_1YR"}, {"index": 6, "County": "Alameda County", "Year": 2007, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.774, "Source": "B08301_ACS07_1YR"}, {"index": 7, "County": "Alameda County", "Year": 2008, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.767, "Source": "B08301_ACS08_1YR"}, {"index": 8, "County": "Alameda County", "Year": 2009, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.764, "Source": "B08301_ACS09_1YR"}, {"index": 9, "County": "Alameda County", "Year": 2010, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.777, "Source": "B08301_ACS10_1YR"}]}}';
+    // axios
+    instance
+      .post(baseurl + '/api/v1/queryduck', data)
       .then(res => {
         setQueryResults({
-          data: JSON.parse(res.data.data),
-          error: res.data.error,
-          message: res.data.message,
-          dtypes: res.data.dtypes,
+          data: JSON.parse(hardcode).results.data,
+          error: false,
+          message: '',
+          dtypes: JSON.parse(hardcode).results.schema.fields.map(
+            (field: any) => field.type
+          ),
         });
       })
-      .then(() => setloading(false));
+      .then(() => {
+        console.log('Query Results:', query_results.data);
+        setloading(false);
+      });
   };
 
   const resetDataset = () => {
@@ -79,7 +105,7 @@ const SqlModel: React.FC<{id: string}> = ({id}) => {
           toggleModel();
         }}
       >
-        <Icon.Edit className="feather" /> Run SQL
+        <Icon.Edit className="feather" /> Execute SQL
       </button>
       <PopupModel
         show={show}
@@ -213,9 +239,18 @@ const PopupModel: React.FC<ModelProps> = ({
     resetDataset();
     setsqlQuery('select * from DATASET;');
   };
-
+  const hardcodejson =
+      {"results": {"schema": {"fields": [{"name": "index", "type": "integer"}, {"name": "County", "type": "string"}, {"name": "Year", "type": "integer"}, {"name": "Data_Type", "type": "string"}, {"name": "Mode", "type": "string"}, {"name": "Share", "type": "number"}, {"name": "Source", "type": "string"}], "primaryKey": ["index"], "pandas_version": "0.20.0"}, "data": [{"index": 0, "County": "Alameda County", "Year": 1960, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.749, "Source": "BayAreaCensus"}, {"index": 1, "County": "Alameda County", "Year": 1970, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.783, "Source": "BayAreaCensus"}, {"index": 2, "County": "Alameda County", "Year": 1980, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.776, "Source": "NHGIS_Census"}, {"index": 3, "County": "Alameda County", "Year": 1990, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.795, "Source": "NHGIS_Census"}, {"index": 4, "County": "Alameda County", "Year": 2000, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.802, "Source": "NHGIS_Census"}, {"index": 5, "County": "Alameda County", "Year": 2006, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.768, "Source": "B08301_ACS06_1YR"}, {"index": 6, "County": "Alameda County", "Year": 2007, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.774, "Source": "B08301_ACS07_1YR"}, {"index": 7, "County": "Alameda County", "Year": 2008, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.767, "Source": "B08301_ACS08_1YR"}, {"index": 8, "County": "Alameda County", "Year": 2009, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.764, "Source": "B08301_ACS09_1YR"}, {"index": 9, "County": "Alameda County", "Year": 2010, "Data_Type": "Residence", "Mode": "All Auto", "Share": 0.777, "Source": "B08301_ACS10_1YR"}]}};
+  const [query_result, setQueryResults] = useState<QueryStructure>({
+    data: hardcodejson.results.data,
+    error: false,
+    message: '',
+    dtypes: hardcodejson.results.schema.fields.map(
+      (field: any) => field.type
+    ),
+  });
   const TableComponent = useMemo(() => {
-    if (query_results && query_results.data.length) {
+    if (query_result && query_result.data.length) {
       return (
         <div className="results-div">
           <Table style={{width: '100%'}}>
@@ -226,7 +261,7 @@ const PopupModel: React.FC<ModelProps> = ({
                     {col}
                     <div>
                       <span className="badge badge-pill semtype semtype-enumeration">
-                        {query_results.dtypes[id]}
+                        {query_result.dtypes[id]}
                       </span>
                     </div>
                   </TableCell>
@@ -266,7 +301,7 @@ const PopupModel: React.FC<ModelProps> = ({
       <div className="modal-div ">
         <div style={{display: 'flex', marginBottom: '10px'}}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Run SQL Queries on dataset
+            Execute SQL Query
           </Typography>
           <div className="close-btn" style={{marginLeft: 'auto'}}>
             <Icon.X className="feather" onClick={toggleModel} />
@@ -276,7 +311,7 @@ const PopupModel: React.FC<ModelProps> = ({
           <span>Editor</span>
           <div className="tool-btns">
             <div className="right-btns">
-              <Tooltip
+              {/* <Tooltip
                 title="How to use"
                 placement="top"
                 arrow
@@ -287,7 +322,7 @@ const PopupModel: React.FC<ModelProps> = ({
                     <Icon.HelpCircle className="feather" /> Help
                   </div>
                 </button>
-              </Tooltip>
+              </Tooltip> */}
 
               <Tooltip
                 title="Download the queried dataset"
@@ -301,7 +336,7 @@ const PopupModel: React.FC<ModelProps> = ({
                   </div>
                 </button>
               </Tooltip>
-              <Tooltip
+              {/* <Tooltip
                 title="Reset the table"
                 placement="top"
                 arrow
@@ -312,7 +347,7 @@ const PopupModel: React.FC<ModelProps> = ({
                     <Icon.RefreshCw className="feather" /> Reset
                   </div>
                 </button>
-              </Tooltip>
+              </Tooltip> */}
               <Tooltip
                 title="Clear the query"
                 placement="top"
@@ -321,11 +356,11 @@ const PopupModel: React.FC<ModelProps> = ({
               >
                 <button className="btn btn-sm btn-outline-primary">
                   <div className="icon-holder">
-                    <Icon.XOctagon className="feather" /> Clear
+                    <Icon.XOctagon className="feather" /> Erase Query
                   </div>
                 </button>
               </Tooltip>
-              <Tooltip
+              {/* <Tooltip
                 title="Change column data types"
                 placement="top"
                 arrow
@@ -340,7 +375,7 @@ const PopupModel: React.FC<ModelProps> = ({
                     <Icon.Edit className="feather" /> Edit
                   </div>
                 </button>
-              </Tooltip>
+              </Tooltip> */}
               <Tooltip title="Run query" placement="top" arrow>
                 <div
                   className="run-query-btn"

@@ -13,6 +13,7 @@ import tornado.ioloop
 from tornado.routing import Rule, PathMatches, URLSpec
 import tornado.httputil
 import tornado.web
+
 import duckdb
 from minio import Minio
 import requests
@@ -38,7 +39,8 @@ from .profile import Profile
 from .search import Search
 from .sessions import SessionNew, SessionGet
 from .upload import Upload
-
+# from tornado.web import RequestHandler
+from .graceful_shutdown import GracefulHandler
 
 logger = logging.getLogger(__name__)
 
@@ -177,14 +179,43 @@ class Health(BaseHandler):
         else:
             return self.finish('ok')
 
-class QueryDuckDB(BaseHandler):
+PROM_QUERY = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_search_count_1',
+        "Search requests_1",
+    ),
+    time=prometheus_client.Histogram(
+        'req_search_seconds_1',
+        "Search request time_1",
+        buckets=BUCKETS,
+    ),
+)
+
+class QueryDuckDB(BaseHandler, GracefulHandler):
+    @PROM_QUERY.sync()
     # @PROM_LOCATION.sync()
-    def get(self):
+    
+    
+    def post(self):
+        type_ = self.request.headers.get('Content-Type', '')
         result = None
         try:
+            data = self.request.body
+            if type_ == 'application/json':
+                data = json.loads(data)
+
             logger.info("started query")
-            object_name = self.get_query_argument('object_name').strip()
+            # object_name = self.get_query_argument('object_name').strip()
             # bucket_name = self.get_query_argument('bucket_name').strip()
+            logger.info("came here 1")
+            object_name = data['object_name']
+            logger.info("came here 2")
+            logger.info("Object name: %s", object_name)
+            logger.info("came here 3")
+            query = data['query']
+            logger.info("came here 4")
+            logger.info("Query: %s", query)
+            logger.info("came here 5")
 
             minio_client = self.application.minio
 
@@ -193,8 +224,9 @@ class QueryDuckDB(BaseHandler):
                 is_object = minio_client.stat_object("nvn", object_name)
             except Exception as err:
                 is_object = False
-
-        
+            
+            logger.info("Bucket name: %s", "nvn")
+            
 
 
             # if doesn't exist, call the download endpoint and download the file
@@ -223,10 +255,7 @@ class QueryDuckDB(BaseHandler):
 
             # object_name = self.('object_name').strip()
             # bucket_name = self.get_body_argument('bucket_name').strip()
-            query = self.get_query_argument('query').strip()
-            logger.info("Object name: %s", object_name)
-            logger.info("Bucket name: %s", "nvn")
-            logger.info("Query: %s", query)
+            
 
 
             # query = self.get_body_argument('q').strip()
@@ -241,11 +270,13 @@ class QueryDuckDB(BaseHandler):
             result = json.loads(duckdb.execute("SELECT * FROM data LIMIT 10").fetchdf().to_json(orient="table"))
             duckdb.execute("DROP TABLE data")
             logger.info("Completed query")
+            logger.info("Result: %s", result)
         except Exception as e:
             logger.info(f"Error querying data from S3: {e}")
 
         # return self.send_json({'results': str(result)}) if result else self.send_json({'results': []})
-        return self.write({'results': result}) if result is not None else self.write({'results': []})
+        # return self.write({'results': result}) if result is not None else self.write({'results': []})
+        return self.send_json({'results': result}) if result is not None else self.send_json({'results': []})
 
         
 
@@ -287,8 +318,9 @@ def make_app(debug=False):
     duckdb_client.execute("SET s3_access_key_id='devkey'")
     duckdb_client.execute("SET s3_secret_access_key='devpassword'")
     
+#return Application(
 
-    return Application(
+    app = Application(
         [
             ApiRule('/profile', '1', Profile),
             ApiRule('/profile/fast', '1', Profile, {'fast': True}),
@@ -304,9 +336,7 @@ def make_app(debug=False):
             ApiRule('/location', '1', LocationSearch),
             ApiRule('/statistics', '1', Statistics),
             ApiRule('/version', '1', Version),
-            # ApiRule('/queryDuck/([^/]+)', '1', QueryDuckDB),
-            # ApiRule('/queryDuck/(?P<object_name>[^/]+)/(?P<bucket_name>[^/]+)', '1', QueryDuckDB),
-            ApiRule('/queryDuck', '1', QueryDuckDB),
+            ApiRule('/queryduck', '1', QueryDuckDB),
 
 
             URLSpec(r'/(?:api(?:/(?:v[0-9.]+)?)?)?', DocRedirect),
@@ -323,6 +353,7 @@ def make_app(debug=False):
         default_handler_class=CustomErrorHandler,
         default_handler_args={"status_code": 404},
     )
+    return app
 
 
 def main():
